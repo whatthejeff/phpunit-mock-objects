@@ -227,9 +227,7 @@ class PHPUnit_Framework_MockObject_Generator
      */
     protected static function getObject($code, $className, $originalClassName = '', $callOriginalConstructor = FALSE, $callAutoload = FALSE, array $arguments = array())
     {
-        if (!class_exists($className, FALSE)) {
-            eval($code);
-        }
+        self::getClass($code, $className);
 
         if ($callOriginalConstructor &&
             !interface_exists($originalClassName, $callAutoload)) {
@@ -248,6 +246,17 @@ class PHPUnit_Framework_MockObject_Generator
         }
 
         return $object;
+    }
+
+    /**
+     * @param  string $code
+     * @param  string $className
+     */
+    protected static function getClass($code, $className)
+    {
+        if (!class_exists($className, FALSE)) {
+            eval($code);
+        }
     }
 
     /**
@@ -321,11 +330,13 @@ class PHPUnit_Framework_MockObject_Generator
      * @param  boolean $callOriginalConstructor
      * @param  boolean $callOriginalClone
      * @param  boolean $callAutoload
+     * @param  array   $mockedMethods
+     * @param  boolean $cloneArguments
      * @return object
      * @since  Method available since Release 1.1.0
      * @throws InvalidArgumentException
      */
-    public static function getObjectForTrait($traitName, array $arguments = array(), $traitClassName = '', $callOriginalConstructor = TRUE, $callOriginalClone = TRUE, $callAutoload = TRUE)
+    public static function getObjectForTrait($traitName, array $arguments = array(), $traitClassName = '', $callOriginalConstructor = TRUE, $callOriginalClone = TRUE, $callAutoload = TRUE, $mockedMethods = array(), $cloneArguments = TRUE)
     {
         if (!is_string($traitName)) {
             throw PHPUnit_Util_InvalidArgumentHelper::factory(1, 'string');
@@ -345,7 +356,7 @@ class PHPUnit_Framework_MockObject_Generator
         }
 
         $className = self::generateClassName(
-          $traitName, $traitClassName, 'Trait_'
+          $traitName, '', 'Trait_'
         );
 
         $templateDir   = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Generator' .
@@ -361,10 +372,12 @@ class PHPUnit_Framework_MockObject_Generator
           )
         );
 
-        return self::getObject(
+        self::getClass(
           $classTemplate->render(),
           $className['className']
         );
+
+        return self::getMockForAbstractClass($className['className'], $arguments, $traitClassName, $callOriginalConstructor, $callOriginalClone, $callAutoload, $mockedMethods, $cloneArguments);
     }
 
     /**
